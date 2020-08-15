@@ -1,0 +1,37 @@
+Resources:
+  RekogMutateResponseRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: ${self:provider.apiName}-mutate-rekogResponse
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ['lambda.amazonaws.com']
+            Action: ['sts:AssumeRole']
+      Policies:
+        - PolicyName: ${self:provider.apiName}-mutate-rekogResponse-access-policy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action: ['appsync:GraphQL']
+                Resource: { Fn::Join: [ '', [ { Ref: AppSync }, '/types/Mutation/fields/addRekogResponse' ] ] }
+              - Effect: Allow
+                Action:
+                  - 'rekognition:*'
+                  - s3:GetObject
+                  - s3:DeleteObject
+                  - dynamodb:PutItem
+                Resource: '*'
+        - PolicyName: ${self:provider.apiName}-mutate-rekogResponse-cloudwatch-policy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action: ['logs:CreateLogGroup']
+                Resource: "arn:aws:logs:${self:provider.region}:#{AWS::AccountId}:*"
+              - Effect: Allow
+                Action: [ logs:CreateLogStream, logs:PutLogEvents ]
+                Resource: "arn:aws:logs:${self:provider.region}:#{AWS::AccountId}:*"

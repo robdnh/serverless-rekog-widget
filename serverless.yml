@@ -1,0 +1,101 @@
+service: web-portfolio-api
+
+# Create an optimized package for our functions
+package:
+  individually: true
+
+plugins:
+  - serverless-bundle # Package our functions with Webpack
+  - serverless-offline
+  - serverless-pseudo-parameters
+
+custom:
+  stage: ${opt:stage, self:provider.stage}
+  userPoolName: portfolio-${self:custom.stage}-user-pool
+  userPoolClient: portfolio-${self:custom.stage}-user-pool-client
+  RekogTableName: portfolio-${self:custom.stage}-rekog-db
+  rekognitionBucketName: robdnh-portfolio-rekognition-${self:custom.stage}-bucket
+  region: us-east-1
+
+provider:
+  name: aws
+  runtime: nodejs12.x
+  stage: dev
+  region: us-east-1
+  apiName: portfolio
+
+  # 'iamRoleStatements' defines the permission policy for the Lambda function.
+  # In this case Lambda functions are granted with permissions to access DynamoDB.
+  environment:
+    #stripeSecretKey: ${ssm:stripeSecretKeyDev~true}
+    userPoolName: ${self:custom.userPoolName}
+    AWS_PROFILE: default
+    userPoolClient: portfolio-${self:custom.stage}-user-pool-client
+    userPoolARN: ${self:resources.outputs.UserPool.Value}
+    RekogTableName: ${self:custom.RekogTableName}
+    rekognitionBucketName: ${self:custom.rekognitionBucketName}
+    GRAPHQL_API: { Fn::GetAtt: [ AppSync, GraphQLUrl ]}
+    REGION: ${self:provider.region}
+
+  iamRoleStatements:
+    #- Effect: Allow
+    #  Action:
+    #    - s3:*
+    #  Resource:
+    #    - Fn::Join:
+    #      - ''
+    #      -
+    #        - Fn::GetAtt: [ LocalityBucket, Arn ]
+    #        - '/*'
+    - Effect: Allow
+      Action:
+        - cognito-idp:ListUsers
+        - cognito-idp:AdminUpdateUserAttributes
+      Resource:
+        #- arn:aws:cognito-idp:us-east-1:713120915085:userpool/us-east-1_mKQcPu519
+        - Fn::GetAtt: [ CognitoUserPool, Arn ]
+    - Effect: Allow
+      Action:
+        - rekognition:*
+        - s3:GetObject
+        - dynamodb:PutItem
+      Resource: "*"
+
+functions:
+
+  executeRekog:
+    handler: src/executeRekog_mutation.main
+    environment:
+      SLS_DEBUG: true
+    memorySize: 512
+    timeout: 10
+    role: RekogMutateResponseRole
+    events:
+      - s3:
+          bucket: ${self:custom.rekognitionBucketName}
+          event: s3:ObjectCreated:*
+          rules:
+            - prefix: public/
+            - suffix: .jpg
+          existing: true
+  
+# Create our resources with separate CloudFormation templates
+resources:
+  # API Gateway Errors
+  #- ${file(resources/api-gateway-errors.yml)}
+  # S3
+  - ${file(resources/s3-bucket.yml)}
+  # Cognito
+  - ${file(resources/cognito-user-pool.yml)}
+  - ${file(resources/cognito-identity-pool.yml)}
+  # DynamoDB
+  - ${file(resources/dynamodb-table.yml)}
+  # AppSync
+  - ${file(resources/appsync.yml)}
+  # IAM
+  - ${file(resources/lambda-iam-roles.yml)}
+output:
+  UserPool:
+    Description: Cognito User Pool ARN
+    Value:
+      Ref: CognitoUserPool

@@ -1,0 +1,78 @@
+Resources:
+  CognitoUserPool:
+    Type: AWS::Cognito::UserPool
+    Properties:
+      # Generate a name based on the stage
+      UserPoolName: ${self:custom.userPoolName}
+      # Set email as an alias
+      UsernameAttributes:
+        - email
+      AutoVerifiedAttributes:
+        - email
+      Schema:
+        - AttributeDataType: String
+          Mutable: true
+          Required: true
+          Name: email
+
+  CognitoUserPoolClient:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      # Generate an app client name based on the stage
+      ClientName: ${self:custom.userPoolClient}
+      UserPoolId:
+        Ref: CognitoUserPool
+      ExplicitAuthFlows:
+        - ADMIN_NO_SRP_AUTH
+      GenerateSecret: false
+  
+  CognitoUserPoolGroup:
+    Type: AWS::Cognito::UserPoolGroup
+    Properties:
+      Description: 'Administrator group'
+      GroupName: 'Admin'
+      Precedence: 0
+      UserPoolId: 
+        Ref: CognitoUserPool
+
+  AuthRole:
+    Type: AWS::IAM::Role
+    Description: "Role that the authenticated user assumes"
+    Properties:
+      RoleName: 'auth-role'
+      AssumeRolePolicyDocument: 
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Federated: 'cognito-identity.amazonaws.com'
+            Action: 'sts:AssumeRoleWithWebIdentity'
+            Condition:
+              ForAnyValue:StringLike:
+                'cognito-identity.amazon.com:amr': 'authenticated'
+
+  UnAuthRole:
+    Type: AWS::IAM::Role
+    Description: "Role that the unauthenticated user assumes"
+    Properties:
+      RoleName: 'unauth-role'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Federated: 'cognito-identity.amazonaws.com'
+            Action: 'sts:AssumeRoleWithWebIdentity'
+            Condition:
+              ForAnyValue:StringLike:
+                'cognito-identity.amazon.com:amr': 'unauthenticated'
+
+# Print out the Id of the User Pool that is created
+Outputs:
+  UserPoolId:
+    Value:
+      Ref: CognitoUserPool
+
+  UserPoolClientId:
+    Value:
+      Ref: CognitoUserPoolClient

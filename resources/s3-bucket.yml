@@ -1,0 +1,18 @@
+Resources:
+  RekognitionBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: ${self:custom.rekognitionBucketName}
+      CorsConfiguration:
+        CorsRules:
+          -
+            AllowedOrigins:
+              - "*"
+            AllowedMethods:
+              - PUT
+              - GET
+            AllowedHeaders:
+              - "*"
+
+# Next iteration needs to limit allowed origin to
+# Cloudfront OAI

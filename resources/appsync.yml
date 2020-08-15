@@ -1,0 +1,153 @@
+Resources:
+  AppSync:
+    Type: AWS::AppSync::GraphQLApi
+    Properties: 
+      AuthenticationType: "AWS_IAM"
+      Name: "rekog-widget-appsync-api"
+      XrayEnabled: true
+      LogConfig:
+        CloudWatchLogsRoleArn: 
+          Fn::GetAtt: [ AppSyncDynamoRole, Arn ]
+        FieldLogLevel: 'ERROR'
+
+  AppSyncSchema:
+    Type: AWS::AppSync::GraphQLSchema
+    Properties:
+      ApiId:
+        Fn::GetAtt: [ AppSync, ApiId ]
+      Definition: '
+
+schema {
+  query: Query
+  mutation: Mutation
+  subscription: Subscription
+}
+
+type Query {
+  me(id: ID!): RekogImage
+}
+
+type Subscription {
+  addedRekogResponse(id:ID!): RekogImage
+  @aws_subscribe(mutations: ["addRekogResponse"])
+}
+
+type Mutation {
+  addRekogResponse(
+    id: ID!
+    ageHigh: Int
+    ageLow: Int
+    emotionConf1: Float
+    emotionConf2: Float
+    emotionType1: String
+    emotionType2: String
+    genderConf: Float
+    genderValue: String
+    labels: AWSJSON
+    timestamp: Float
+  ): RekogImage
+    
+}
+
+type RekogImage {
+  id: ID!
+  ageHigh: Int
+  ageLow: Int
+  emotionConf1: Float
+  emotionConf2: Float
+  emotionType1: String
+  emotionType2: String
+  genderConf: Float
+  genderValue: String
+  labels: AWSJSON
+  timestamp: Float
+}
+'
+  RekogResolverDataSource: 
+    Type: AWS::AppSync::DataSource
+    Properties:
+      ApiId:
+        Fn::GetAtt: [ AppSync, ApiId ]
+      Name: RekogResolverDataSource
+      Description: "Data Source for AWS Rekognition GraphQL query"
+      Type: AMAZON_DYNAMODB
+      ServiceRoleArn:
+        Fn::GetAtt: [ AppSyncDynamoRole, Arn ]
+      DynamoDBConfig:
+        AwsRegion: us-east-1
+        TableName: ${self:custom.RekogTableName}
+
+  AppSyncDynamoRole:
+      Type: AWS::IAM::Role
+      Properties:
+        AssumeRolePolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - Action: ['sts:AssumeRole']
+            Effect: Allow
+            Principal:
+              Service: [appsync.amazonaws.com]
+        Path: /service-role/
+        Policies:
+          - PolicyName: DynamoDBReadWrite
+            PolicyDocument:
+              Version: '2012-10-17'
+              Statement:
+                - Action:
+                  - "dynamodb:GetItem"
+                  - "logs:*"
+                  Effect: Allow
+                  Resource: '*'
+                  
+  RekogMutationResolver:
+    Type: AWS::AppSync::Resolver
+    DependsOn: AppSyncSchema
+    Properties:
+      ApiId:
+        Fn::GetAtt: [ AppSync, ApiId ]
+      TypeName: Mutation
+      FieldName: addRekogResponse
+      DataSourceName:
+        Fn::GetAtt: [ RekogResolverDataSource, Name ]
+      RequestMappingTemplate: |
+        {
+            "version" : "2017-02-28",
+            "operation" : "PutItem",
+            "key" : {
+                ## If object "id" should come from GraphQL arguments, change to $util.dynamodb.toDynamoDBJson($ctx.args.id)
+                "id": $util.dynamodb.toDynamoDBJson($context.arguments.id),
+            },
+            "attributeValues" : {
+              "ageHigh": $util.dynamodb.toDynamoDBJson($context.arguments.ageHigh),
+              "ageLow": $util.dynamodb.toDynamoDBJson($context.arguments.ageLow),
+              "emotionConf1": $util.dynamodb.toDynamoDBJson($context.arguments.emotionConf1),
+              "emotionConf2": $util.dynamodb.toDynamoDBJson($context.arguments.emotionConf2),
+              "emotionType1": $util.dynamodb.toDynamoDBJson($context.arguments.emotionType1),
+              "emotionType2": $util.dynamodb.toDynamoDBJson($context.arguments.emotionType2),
+              "genderConf": $util.dynamodb.toDynamoDBJson($context.arguments.genderConf),
+              "genderValue": $util.dynamodb.toDynamoDBJson($context.arguments.genderValue),
+              "labels": $util.dynamodb.toDynamoDBJson($context.arguments.labels),
+              "timestamp": $util.dynamodb.toDynamoDBJson($context.arguments.timestamp)
+            }
+        }
+      ResponseMappingTemplate: "$util.toJson($ctx.result)"
+
+  RekogQueryResolver:
+      Type: AWS::AppSync::Resolver
+      DependsOn: AppSyncSchema
+      Properties:
+        ApiId:
+          Fn::GetAtt: [ AppSync, ApiId ]
+        TypeName: Query
+        FieldName: me
+        DataSourceName:
+          Fn::GetAtt: [ RekogResolverDataSource, Name ]
+        RequestMappingTemplate: |
+          {
+            "version": "2017-02-28",
+            "operation": "GetItem",
+            "key" :{
+              "id":$util.dynamodb.toDynamoDBJson($ctx.arguments.id)
+            }
+          }
+        ResponseMappingTemplate: "$utils.toJson($ctx.result)"
