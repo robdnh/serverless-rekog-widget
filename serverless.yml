@@ -1,4 +1,4 @@
-service: web-portfolio-api
+service: rekog-widget-api
 
 # Create an optimized package for our functions
 package:
@@ -11,10 +11,10 @@ plugins:
 
 custom:
   stage: ${opt:stage, self:provider.stage}
-  userPoolName: portfolio-${self:custom.stage}-user-pool
-  userPoolClient: portfolio-${self:custom.stage}-user-pool-client
-  RekogTableName: portfolio-${self:custom.stage}-rekog-db
-  rekognitionBucketName: robdnh-portfolio-rekognition-${self:custom.stage}-bucket
+  userPoolName: ${self:custom.stage}-user-pool
+  userPoolClient: ${self:custom.stage}-user-pool-client
+  RekogTableName: ${self:custom.stage}-rekog-db
+  rekognitionBucketName: rekognition-widget-${self:custom.stage}-bucket
   region: us-east-1
 
 provider:
@@ -30,7 +30,7 @@ provider:
     #stripeSecretKey: ${ssm:stripeSecretKeyDev~true}
     userPoolName: ${self:custom.userPoolName}
     AWS_PROFILE: default
-    userPoolClient: portfolio-${self:custom.stage}-user-pool-client
+    userPoolClient: rekog-widget${self:custom.stage}-user-pool-client
     userPoolARN: ${self:resources.outputs.UserPool.Value}
     RekogTableName: ${self:custom.RekogTableName}
     rekognitionBucketName: ${self:custom.rekognitionBucketName}
@@ -38,21 +38,11 @@ provider:
     REGION: ${self:provider.region}
 
   iamRoleStatements:
-    #- Effect: Allow
-    #  Action:
-    #    - s3:*
-    #  Resource:
-    #    - Fn::Join:
-    #      - ''
-    #      -
-    #        - Fn::GetAtt: [ LocalityBucket, Arn ]
-    #        - '/*'
     - Effect: Allow
       Action:
         - cognito-idp:ListUsers
         - cognito-idp:AdminUpdateUserAttributes
       Resource:
-        #- arn:aws:cognito-idp:us-east-1:713120915085:userpool/us-east-1_mKQcPu519
         - Fn::GetAtt: [ CognitoUserPool, Arn ]
     - Effect: Allow
       Action:
@@ -81,8 +71,6 @@ functions:
   
 # Create our resources with separate CloudFormation templates
 resources:
-  # API Gateway Errors
-  #- ${file(resources/api-gateway-errors.yml)}
   # S3
   - ${file(resources/s3-bucket.yml)}
   # Cognito
