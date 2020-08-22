@@ -2,7 +2,7 @@
 <br />
 <p align="center">
 
-  <h3 align="center">Rekognition Component Processing Infrastructure<h3>
+  <h1 align="center">Rekognition Component Processing Infrastructure<h3>
 
   <p align="center">
     Set of Serverless Framework Cloudformation templates that builds out a AWS Rekognition processing infrastructure and returns results to a user. Backend and API powered by Cognito, Appsync, and DynamoDB. Infrastructure interaction limited to authenticated users GraphQL queries against Appsync API.
