@@ -65,9 +65,7 @@ Resources:
               - Effect: 'Allow'
                 Action: appsync:GraphQL
                 Resource:
-                  - { Fn::Join: [ '', [ {Ref: AppSync }, '/types/Query/*' ] ] }
                   - { Fn::Join: [ '', [ {Ref: AppSync }, '/types/Subscription/fields/*' ] ] }
-                  - { Fn::Join: [ '', [ {Ref: AppSync }, '/types/Mutation/fields/*' ] ] }
 
 # Print out the Id of the Identity Pool that is created
 Outputs:

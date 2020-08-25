@@ -6,7 +6,6 @@ package:
 
 plugins:
   - serverless-bundle # Package our functions with Webpack
-  - serverless-offline
   - serverless-pseudo-parameters
 
 custom:

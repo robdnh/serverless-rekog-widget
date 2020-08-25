@@ -1,0 +1,1441 @@
+{
+  "service": {
+    "service": "rekog-widget-api",
+    "serviceObject": {
+      "name": "rekog-widget-api"
+    },
+    "provider": {
+      "stage": "dev",
+      "variableSyntax": "\\${([ ~:a-zA-Z0-9._@'\",\\-\\/\\(\\)*?]+?)}",
+      "name": "aws",
+      "runtime": "nodejs12.x",
+      "region": "us-east-1",
+      "apiName": "portfolio",
+      "environment": {
+        "userPoolName": "dev-user-pool",
+        "AWS_PROFILE": "default",
+        "userPoolClient": "rekog-widgetdev-user-pool-client",
+        "RekogTableName": "dev-rekog-db",
+        "rekognitionBucketName": "rekognition-widget-dev-bucket",
+        "GRAPHQL_API": {
+          "Fn::GetAtt": [
+            "AppSync",
+            "GraphQLUrl"
+          ]
+        },
+        "REGION": "us-east-1"
+      },
+      "iamRoleStatements": [
+        {
+          "Effect": "Allow",
+          "Action": [
+            "cognito-idp:ListUsers",
+            "cognito-idp:AdminUpdateUserAttributes"
+          ],
+          "Resource": [
+            {
+              "Fn::GetAtt": [
+                "CognitoUserPool",
+                "Arn"
+              ]
+            }
+          ]
+        },
+        {
+          "Effect": "Allow",
+          "Action": [
+            "rekognition:*",
+            "s3:GetObject",
+            "dynamodb:PutItem"
+          ],
+          "Resource": "*"
+        }
+      ],
+      "versionFunctions": true,
+      "remoteFunctionData": null,
+      "compiledCloudFormationTemplate": {
+        "AWSTemplateFormatVersion": "2010-09-09",
+        "Description": "The AWS CloudFormation template for this Serverless application",
+        "Resources": {
+          "ServerlessDeploymentBucket": {
+            "Type": "AWS::S3::Bucket",
+            "Properties": {
+              "BucketEncryption": {
+                "ServerSideEncryptionConfiguration": [
+                  {
+                    "ServerSideEncryptionByDefault": {
+                      "SSEAlgorithm": "AES256"
+                    }
+                  }
+                ]
+              }
+            }
+          },
+          "ServerlessDeploymentBucketPolicy": {
+            "Type": "AWS::S3::BucketPolicy",
+            "Properties": {
+              "Bucket": {
+                "Ref": "ServerlessDeploymentBucket"
+              },
+              "PolicyDocument": {
+                "Statement": [
+                  {
+                    "Action": "s3:*",
+                    "Effect": "Deny",
+                    "Principal": "*",
+                    "Resource": [
+                      {
+                        "Fn::Join": [
+                          "",
+                          [
+                            "arn:",
+                            {
+                              "Ref": "AWS::Partition"
+                            },
+                            ":s3:::",
+                            {
+                              "Ref": "ServerlessDeploymentBucket"
+                            },
+                            "/*"
+                          ]
+                        ]
+                      }
+                    ],
+                    "Condition": {
+                      "Bool": {
+                        "aws:SecureTransport": false
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          },
+          "ExecuteRekogLogGroup": {
+            "Type": "AWS::Logs::LogGroup",
+            "Properties": {
+              "LogGroupName": "/aws/lambda/rekog-widget-api-dev-executeRekog"
+            }
+          },
+          "ExecuteRekogLambdaFunction": {
+            "Type": "AWS::Lambda::Function",
+            "Properties": {
+              "Code": {
+                "S3Bucket": {
+                  "Ref": "ServerlessDeploymentBucket"
+                },
+                "S3Key": "serverless/rekog-widget-api/dev/1598220425460-2020-08-23T22:07:05.460Z/executeRekog.zip"
+              },
+              "FunctionName": "rekog-widget-api-dev-executeRekog",
+              "Handler": "src/executeRekog_mutation.main",
+              "MemorySize": 512,
+              "Role": {
+                "Fn::GetAtt": [
+                  "RekogMutateResponseRole",
+                  "Arn"
+                ]
+              },
+              "Runtime": "nodejs12.x",
+              "Timeout": 10,
+              "Environment": {
+                "Variables": {
+                  "userPoolName": "dev-user-pool",
+                  "AWS_PROFILE": "default",
+                  "userPoolClient": "rekog-widgetdev-user-pool-client",
+                  "RekogTableName": "dev-rekog-db",
+                  "rekognitionBucketName": "rekognition-widget-dev-bucket",
+                  "GRAPHQL_API": {
+                    "$ref": "$[\"service\"][\"provider\"][\"environment\"][\"GRAPHQL_API\"]"
+                  },
+                  "REGION": "us-east-1",
+                  "SLS_DEBUG": true
+                }
+              }
+            },
+            "DependsOn": [
+              "ExecuteRekogLogGroup",
+              "RekogMutateResponseRole"
+            ]
+          },
+          "ExecuteRekogLambdaVersionNJxdiZ4VsDIacBHNt4fZBw31s9xldy7qCNmZrdunFs": {
+            "Type": "AWS::Lambda::Version",
+            "DeletionPolicy": "Retain",
+            "Properties": {
+              "FunctionName": {
+                "Ref": "ExecuteRekogLambdaFunction"
+              },
+              "CodeSha256": "iUeMGIeesO7O3LNI1Ykbg4ALhkzmLZL1+uxtrZ42Ai0="
+            }
+          },
+          "ExecuteRekogCustomS31": {
+            "Type": "Custom::S3",
+            "Version": 1,
+            "DependsOn": [
+              "ExecuteRekogLambdaFunction",
+              "CustomDashresourceDashexistingDashs3LambdaFunction"
+            ],
+            "Properties": {
+              "ServiceToken": {
+                "Fn::GetAtt": [
+                  "CustomDashresourceDashexistingDashs3LambdaFunction",
+                  "Arn"
+                ]
+              },
+              "FunctionName": "rekog-widget-api-dev-executeRekog",
+              "BucketName": "rekognition-widget-dev-bucket",
+              "BucketConfigs": [
+                {
+                  "Event": "s3:ObjectCreated:*",
+                  "Rules": [
+                    {
+                      "Prefix": "public/"
+                    },
+                    {
+                      "Suffix": ".jpg"
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          "IamRoleCustomResourcesLambdaExecution": {
+            "Type": "AWS::IAM::Role",
+            "Properties": {
+              "AssumeRolePolicyDocument": {
+                "Version": "2012-10-17",
+                "Statement": [
+                  {
+                    "Effect": "Allow",
+                    "Principal": {
+                      "Service": [
+                        "lambda.amazonaws.com"
+                      ]
+                    },
+                    "Action": [
+                      "sts:AssumeRole"
+                    ]
+                  }
+                ]
+              },
+              "Policies": [
+                {
+                  "PolicyName": {
+                    "Fn::Join": [
+                      "-",
+                      [
+                        "dev",
+                        "rekog-widget-api",
+                        "custom-resources-lambda"
+                      ]
+                    ]
+                  },
+                  "PolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                      {
+                        "Effect": "Allow",
+                        "Resource": {
+                          "Fn::Join": [
+                            ":",
+                            [
+                              "arn",
+                              {
+                                "Ref": "AWS::Partition"
+                              },
+                              "s3",
+                              "",
+                              "",
+                              "rekognition-widget-dev-bucket"
+                            ]
+                          ]
+                        },
+                        "Action": [
+                          "s3:PutBucketNotification",
+                          "s3:GetBucketNotification"
+                        ]
+                      },
+                      {
+                        "Effect": "Allow",
+                        "Resource": {
+                          "Fn::Join": [
+                            ":",
+                            [
+                              "arn",
+                              {
+                                "Ref": "AWS::Partition"
+                              },
+                              "lambda",
+                              {
+                                "Ref": "AWS::Region"
+                              },
+                              {
+                                "Ref": "AWS::AccountId"
+                              },
+                              "function",
+                              "rekog-widget-api-dev-executeRekog"
+                            ]
+                          ]
+                        },
+                        "Action": [
+                          "lambda:AddPermission",
+                          "lambda:RemovePermission"
+                        ]
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          },
+          "CustomDashresourceDashexistingDashs3LambdaFunction": {
+            "Type": "AWS::Lambda::Function",
+            "Properties": {
+              "Code": {
+                "S3Bucket": {
+                  "Ref": "ServerlessDeploymentBucket"
+                },
+                "S3Key": "serverless/rekog-widget-api/dev/1598220425460-2020-08-23T22:07:05.460Z/custom-resources.zip"
+              },
+              "FunctionName": "rekog-widget-api-dev-custom-resource-existing-s3",
+              "Handler": "s3/handler.handler",
+              "MemorySize": 1024,
+              "Runtime": "nodejs12.x",
+              "Timeout": 180,
+              "Role": {
+                "Fn::GetAtt": [
+                  "IamRoleCustomResourcesLambdaExecution",
+                  "Arn"
+                ]
+              }
+            },
+            "DependsOn": [
+              "IamRoleCustomResourcesLambdaExecution"
+            ]
+          },
+          "RekognitionBucket": {
+            "Type": "AWS::S3::Bucket",
+            "Properties": {
+              "BucketName": "rekognition-widget-dev-bucket",
+              "CorsConfiguration": {
+                "CorsRules": [
+                  {
+                    "AllowedOrigins": [
+                      "*"
+                    ],
+                    "AllowedMethods": [
+                      "PUT",
+                      "GET"
+                    ],
+                    "AllowedHeaders": [
+                      "*"
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          "CognitoUserPool": {
+            "Type": "AWS::Cognito::UserPool",
+            "Properties": {
+              "UserPoolName": "dev-user-pool",
+              "UsernameAttributes": [
+                "email"
+              ],
+              "AutoVerifiedAttributes": [
+                "email"
+              ],
+              "Schema": [
+                {
+                  "AttributeDataType": "String",
+                  "Mutable": true,
+                  "Required": true,
+                  "Name": "email"
+                }
+              ]
+            }
+          },
+          "CognitoUserPoolClient": {
+            "Type": "AWS::Cognito::UserPoolClient",
+            "Properties": {
+              "ClientName": "dev-user-pool-client",
+              "UserPoolId": {
+                "Ref": "CognitoUserPool"
+              },
+              "ExplicitAuthFlows": [
+                "ADMIN_NO_SRP_AUTH"
+              ],
+              "GenerateSecret": false
+            }
+          },
+          "CognitoUserPoolGroup": {
+            "Type": "AWS::Cognito::UserPoolGroup",
+            "Properties": {
+              "Description": "Administrator group",
+              "GroupName": "Admin",
+              "Precedence": 0,
+              "UserPoolId": {
+                "Ref": "CognitoUserPool"
+              }
+            }
+          },
+          "AuthRole": {
+            "Type": "AWS::IAM::Role",
+            "Description": "Role that the authenticated user assumes",
+            "Properties": {
+              "RoleName": "auth-role",
+              "AssumeRolePolicyDocument": {
+                "Version": "2012-10-17",
+                "Statement": [
+                  {
+                    "Effect": "Allow",
+                    "Principal": {
+                      "Federated": "cognito-identity.amazonaws.com"
+                    },
+                    "Action": "sts:AssumeRoleWithWebIdentity",
+                    "Condition": {
+                      "ForAnyValue:StringLike": {
+                        "cognito-identity.amazon.com:amr": "authenticated"
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          },
+          "UnAuthRole": {
+            "Type": "AWS::IAM::Role",
+            "Description": "Role that the unauthenticated user assumes",
+            "Properties": {
+              "RoleName": "unauth-role",
+              "AssumeRolePolicyDocument": {
+                "Version": "2012-10-17",
+                "Statement": [
+                  {
+                    "Effect": "Allow",
+                    "Principal": {
+                      "Federated": "cognito-identity.amazonaws.com"
+                    },
+                    "Action": "sts:AssumeRoleWithWebIdentity",
+                    "Condition": {
+                      "ForAnyValue:StringLike": {
+                        "cognito-identity.amazon.com:amr": "unauthenticated"
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          },
+          "CognitoIdentityPool": {
+            "Type": "AWS::Cognito::IdentityPool",
+            "Properties": {
+              "IdentityPoolName": "devIdentityPool",
+              "AllowUnauthenticatedIdentities": false,
+              "CognitoIdentityProviders": [
+                {
+                  "ClientId": {
+                    "Ref": "CognitoUserPoolClient"
+                  },
+                  "ProviderName": {
+                    "Fn::GetAtt": [
+                      "CognitoUserPool",
+                      "ProviderName"
+                    ]
+                  }
+                }
+              ]
+            }
+          },
+          "CognitoIdentityPoolRoles": {
+            "Type": "AWS::Cognito::IdentityPoolRoleAttachment",
+            "Properties": {
+              "IdentityPoolId": {
+                "Ref": "CognitoIdentityPool"
+              },
+              "Roles": {
+                "authenticated": {
+                  "Fn::GetAtt": [
+                    "CognitoAuthRole",
+                    "Arn"
+                  ]
+                }
+              }
+            }
+          },
+          "CognitoAuthRole": {
+            "Type": "AWS::IAM::Role",
+            "Properties": {
+              "Path": "/",
+              "AssumeRolePolicyDocument": {
+                "Version": "2012-10-17",
+                "Statement": [
+                  {
+                    "Effect": "Allow",
+                    "Principal": {
+                      "Federated": "cognito-identity.amazonaws.com"
+                    },
+                    "Action": [
+                      "sts:AssumeRoleWithWebIdentity"
+                    ],
+                    "Condition": {
+                      "StringEquals": {
+                        "cognito-identity.amazonaws.com:aud": {
+                          "Ref": "CognitoIdentityPool"
+                        }
+                      },
+                      "ForAnyValue:StringLike": {
+                        "cognito-identity.amazonaws.com:amr": "authenticated"
+                      }
+                    }
+                  }
+                ]
+              },
+              "Policies": [
+                {
+                  "PolicyName": "CognitoAuthorizedPolicy",
+                  "PolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                      {
+                        "Effect": "Allow",
+                        "Action": [
+                          "mobiletargeting:PutEvents",
+                          "mobiletargeting:UpdateEndpoint",
+                          "mobiletargeting:GetUserEndpoints",
+                          "mobileanalytics:PutEvents",
+                          "cognito-sync:*",
+                          "cognito-identity:*",
+                          "s3:PutObject"
+                        ],
+                        "Resource": "*"
+                      }
+                    ]
+                  }
+                },
+                {
+                  "PolicyName": "PortfolioGraphQLAccess",
+                  "PolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                      {
+                        "Effect": "Allow",
+                        "Action": "appsync:GraphQL",
+                        "Resource": [
+                          {
+                            "Fn::Join": [
+                              "",
+                              [
+                                {
+                                  "Ref": "AppSync"
+                                },
+                                "/types/Subscription/fields/*"
+                              ]
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          },
+          "RekogTable": {
+            "Type": "AWS::DynamoDB::Table",
+            "Properties": {
+              "TableName": "dev-rekog-db",
+              "AttributeDefinitions": [
+                {
+                  "AttributeName": "id",
+                  "AttributeType": "S"
+                }
+              ],
+              "KeySchema": [
+                {
+                  "AttributeName": "id",
+                  "KeyType": "HASH"
+                }
+              ],
+              "BillingMode": "PAY_PER_REQUEST"
+            }
+          },
+          "AppSync": {
+            "Type": "AWS::AppSync::GraphQLApi",
+            "Properties": {
+              "AuthenticationType": "AWS_IAM",
+              "Name": "rekog-widget-appsync-api",
+              "XrayEnabled": true,
+              "LogConfig": {
+                "CloudWatchLogsRoleArn": {
+                  "Fn::GetAtt": [
+                    "AppSyncDynamoRole",
+                    "Arn"
+                  ]
+                },
+                "FieldLogLevel": "ERROR"
+              }
+            }
+          },
+          "AppSyncSchema": {
+            "Type": "AWS::AppSync::GraphQLSchema",
+            "Properties": {
+              "ApiId": {
+                "Fn::GetAtt": [
+                  "AppSync",
+                  "ApiId"
+                ]
+              },
+              "Definition": "\nschema { query: Query mutation: Mutation subscription: Subscription }\ntype Query { me(id: ID!): RekogImage }\ntype Subscription { addedRekogResponse(id:ID!): RekogImage @aws_subscribe(mutations: [\"addRekogResponse\"]) }\ntype Mutation { addRekogResponse( id: ID! ageHigh: Int ageLow: Int emotionConf1: Float emotionConf2: Float emotionType1: String emotionType2: String genderConf: Float genderValue: String labels: AWSJSON timestamp: Float ): RekogImage\n}\ntype RekogImage { id: ID! ageHigh: Int ageLow: Int emotionConf1: Float emotionConf2: Float emotionType1: String emotionType2: String genderConf: Float genderValue: String labels: AWSJSON timestamp: Float } "
+            }
+          },
+          "RekogResolverDataSource": {
+            "Type": "AWS::AppSync::DataSource",
+            "Properties": {
+              "ApiId": {
+                "Fn::GetAtt": [
+                  "AppSync",
+                  "ApiId"
+                ]
+              },
+              "Name": "RekogResolverDataSource",
+              "Description": "Data Source for AWS Rekognition GraphQL query",
+              "Type": "AMAZON_DYNAMODB",
+              "ServiceRoleArn": {
+                "Fn::GetAtt": [
+                  "AppSyncDynamoRole",
+                  "Arn"
+                ]
+              },
+              "DynamoDBConfig": {
+                "AwsRegion": "us-east-1",
+                "TableName": "dev-rekog-db"
+              }
+            }
+          },
+          "AppSyncDynamoRole": {
+            "Type": "AWS::IAM::Role",
+            "Properties": {
+              "AssumeRolePolicyDocument": {
+                "Version": "2012-10-17",
+                "Statement": [
+                  {
+                    "Action": [
+                      "sts:AssumeRole"
+                    ],
+                    "Effect": "Allow",
+                    "Principal": {
+                      "Service": [
+                        "appsync.amazonaws.com"
+                      ]
+                    }
+                  }
+                ]
+              },
+              "Path": "/service-role/",
+              "Policies": [
+                {
+                  "PolicyName": "DynamoDBReadWrite",
+                  "PolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                      {
+                        "Action": [
+                          "dynamodb:GetItem",
+                          "logs:*"
+                        ],
+                        "Effect": "Allow",
+                        "Resource": "*"
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          },
+          "RekogMutationResolver": {
+            "Type": "AWS::AppSync::Resolver",
+            "DependsOn": "AppSyncSchema",
+            "Properties": {
+              "ApiId": {
+                "Fn::GetAtt": [
+                  "AppSync",
+                  "ApiId"
+                ]
+              },
+              "TypeName": "Mutation",
+              "FieldName": "addRekogResponse",
+              "DataSourceName": {
+                "Fn::GetAtt": [
+                  "RekogResolverDataSource",
+                  "Name"
+                ]
+              },
+              "RequestMappingTemplate": "{\n    \"version\" : \"2017-02-28\",\n    \"operation\" : \"PutItem\",\n    \"key\" : {\n        ## If object \"id\" should come from GraphQL arguments, change to $util.dynamodb.toDynamoDBJson($ctx.args.id)\n        \"id\": $util.dynamodb.toDynamoDBJson($context.arguments.id),\n    },\n    \"attributeValues\" : {\n      \"ageHigh\": $util.dynamodb.toDynamoDBJson($context.arguments.ageHigh),\n      \"ageLow\": $util.dynamodb.toDynamoDBJson($context.arguments.ageLow),\n      \"emotionConf1\": $util.dynamodb.toDynamoDBJson($context.arguments.emotionConf1),\n      \"emotionConf2\": $util.dynamodb.toDynamoDBJson($context.arguments.emotionConf2),\n      \"emotionType1\": $util.dynamodb.toDynamoDBJson($context.arguments.emotionType1),\n      \"emotionType2\": $util.dynamodb.toDynamoDBJson($context.arguments.emotionType2),\n      \"genderConf\": $util.dynamodb.toDynamoDBJson($context.arguments.genderConf),\n      \"genderValue\": $util.dynamodb.toDynamoDBJson($context.arguments.genderValue),\n      \"labels\": $util.dynamodb.toDynamoDBJson($context.arguments.labels),\n      \"timestamp\": $util.dynamodb.toDynamoDBJson($context.arguments.timestamp)\n    }\n}\n",
+              "ResponseMappingTemplate": "$util.toJson($ctx.result)"
+            }
+          },
+          "RekogQueryResolver": {
+            "Type": "AWS::AppSync::Resolver",
+            "DependsOn": "AppSyncSchema",
+            "Properties": {
+              "ApiId": {
+                "Fn::GetAtt": [
+                  "AppSync",
+                  "ApiId"
+                ]
+              },
+              "TypeName": "Query",
+              "FieldName": "me",
+              "DataSourceName": {
+                "Fn::GetAtt": [
+                  "RekogResolverDataSource",
+                  "Name"
+                ]
+              },
+              "RequestMappingTemplate": "{\n  \"version\": \"2017-02-28\",\n  \"operation\": \"GetItem\",\n  \"key\" :{\n    \"id\":$util.dynamodb.toDynamoDBJson($ctx.arguments.id)\n  }\n}\n",
+              "ResponseMappingTemplate": "$utils.toJson($ctx.result)"
+            }
+          },
+          "RekogMutateResponseRole": {
+            "Type": "AWS::IAM::Role",
+            "Properties": {
+              "RoleName": "portfolio-mutate-rekogResponse",
+              "AssumeRolePolicyDocument": {
+                "Version": "2012-10-17",
+                "Statement": [
+                  {
+                    "Effect": "Allow",
+                    "Principal": {
+                      "Service": [
+                        "lambda.amazonaws.com"
+                      ]
+                    },
+                    "Action": [
+                      "sts:AssumeRole"
+                    ]
+                  }
+                ]
+              },
+              "Policies": [
+                {
+                  "PolicyName": "portfolio-mutate-rekogResponse-access-policy",
+                  "PolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                      {
+                        "Effect": "Allow",
+                        "Action": [
+                          "appsync:GraphQL"
+                        ],
+                        "Resource": {
+                          "Fn::Join": [
+                            "",
+                            [
+                              {
+                                "Ref": "AppSync"
+                              },
+                              "/types/Mutation/fields/addRekogResponse"
+                            ]
+                          ]
+                        }
+                      },
+                      {
+                        "Effect": "Allow",
+                        "Action": [
+                          "rekognition:*",
+                          "s3:GetObject",
+                          "s3:DeleteObject",
+                          "dynamodb:PutItem"
+                        ],
+                        "Resource": "*"
+                      }
+                    ]
+                  }
+                },
+                {
+                  "PolicyName": "portfolio-mutate-rekogResponse-cloudwatch-policy",
+                  "PolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                      {
+                        "Effect": "Allow",
+                        "Action": [
+                          "logs:CreateLogGroup"
+                        ],
+                        "Resource": {
+                          "Fn::Sub": "arn:aws:logs:us-east-1:${AWS::AccountId}:*"
+                        }
+                      },
+                      {
+                        "Effect": "Allow",
+                        "Action": [
+                          "logs:CreateLogStream",
+                          "logs:PutLogEvents"
+                        ],
+                        "Resource": {
+                          "Fn::Sub": "arn:aws:logs:us-east-1:${AWS::AccountId}:*"
+                        }
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "Outputs": {
+          "ServerlessDeploymentBucketName": {
+            "Value": {
+              "Ref": "ServerlessDeploymentBucket"
+            }
+          },
+          "ExecuteRekogLambdaFunctionQualifiedArn": {
+            "Description": "Current Lambda function version",
+            "Value": {
+              "Ref": "ExecuteRekogLambdaVersionNJxdiZ4VsDIacBHNt4fZBw31s9xldy7qCNmZrdunFs"
+            }
+          },
+          "UserPoolId": {
+            "Value": {
+              "Ref": "CognitoUserPool"
+            }
+          },
+          "UserPoolClientId": {
+            "Value": {
+              "Ref": "CognitoUserPoolClient"
+            }
+          },
+          "IdentityPoolId": {
+            "Value": {
+              "Ref": "CognitoIdentityPool"
+            }
+          }
+        }
+      },
+      "coreCloudFormationTemplate": {
+        "AWSTemplateFormatVersion": "2010-09-09",
+        "Description": "The AWS CloudFormation template for this Serverless application",
+        "Resources": {
+          "ServerlessDeploymentBucket": {
+            "Type": "AWS::S3::Bucket",
+            "Properties": {
+              "BucketEncryption": {
+                "ServerSideEncryptionConfiguration": [
+                  {
+                    "ServerSideEncryptionByDefault": {
+                      "SSEAlgorithm": "AES256"
+                    }
+                  }
+                ]
+              }
+            }
+          },
+          "ServerlessDeploymentBucketPolicy": {
+            "Type": "AWS::S3::BucketPolicy",
+            "Properties": {
+              "Bucket": {
+                "Ref": "ServerlessDeploymentBucket"
+              },
+              "PolicyDocument": {
+                "Statement": [
+                  {
+                    "Action": "s3:*",
+                    "Effect": "Deny",
+                    "Principal": "*",
+                    "Resource": [
+                      {
+                        "Fn::Join": [
+                          "",
+                          [
+                            "arn:",
+                            {
+                              "Ref": "AWS::Partition"
+                            },
+                            ":s3:::",
+                            {
+                              "Ref": "ServerlessDeploymentBucket"
+                            },
+                            "/*"
+                          ]
+                        ]
+                      }
+                    ],
+                    "Condition": {
+                      "Bool": {
+                        "aws:SecureTransport": false
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "Outputs": {
+          "ServerlessDeploymentBucketName": {
+            "Value": {
+              "Ref": "ServerlessDeploymentBucket"
+            }
+          }
+        }
+      },
+      "vpc": {}
+    },
+    "custom": {
+      "stage": "dev",
+      "userPoolName": "dev-user-pool",
+      "userPoolClient": "dev-user-pool-client",
+      "RekogTableName": "dev-rekog-db",
+      "rekognitionBucketName": "rekognition-widget-dev-bucket",
+      "region": "us-east-1",
+      "webpack": {
+        "packager": "npm",
+        "packagerOptions": {},
+        "webpackConfig": "node_modules\\serverless-bundle/src/webpack.config.js",
+        "includeModules": {
+          "forceExclude": [
+            "aws-sdk"
+          ],
+          "forceInclude": null,
+          "packagePath": "package.json"
+        }
+      }
+    },
+    "plugins": [
+      "serverless-bundle",
+      "serverless-pseudo-parameters"
+    ],
+    "pluginsData": {},
+    "functions": {
+      "executeRekog": {
+        "handler": "src/executeRekog_mutation.main",
+        "environment": {
+          "SLS_DEBUG": true
+        },
+        "memorySize": 512,
+        "timeout": 10,
+        "role": "RekogMutateResponseRole",
+        "events": [
+          {
+            "s3": {
+              "bucket": "rekognition-widget-dev-bucket",
+              "event": "s3:ObjectCreated:*",
+              "rules": [
+                {
+                  "prefix": "public/"
+                },
+                {
+                  "suffix": ".jpg"
+                }
+              ],
+              "existing": true
+            }
+          }
+        ],
+        "name": "rekog-widget-api-dev-executeRekog",
+        "package": {
+          "artifact": ".serverless\\executeRekog.zip"
+        },
+        "memory": 512,
+        "runtime": "nodejs12.x",
+        "vpc": {},
+        "versionLogicalId": "ExecuteRekogLambdaVersionNJxdiZ4VsDIacBHNt4fZBw31s9xldy7qCNmZrdunFs"
+      }
+    },
+    "resources": {
+      "Resources": {
+        "RekognitionBucket": {
+          "Type": "AWS::S3::Bucket",
+          "Properties": {
+            "BucketName": "rekognition-widget-dev-bucket",
+            "CorsConfiguration": {
+              "CorsRules": [
+                {
+                  "AllowedOrigins": [
+                    "*"
+                  ],
+                  "AllowedMethods": [
+                    "PUT",
+                    "GET"
+                  ],
+                  "AllowedHeaders": [
+                    "*"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        "CognitoUserPool": {
+          "Type": "AWS::Cognito::UserPool",
+          "Properties": {
+            "UserPoolName": "dev-user-pool",
+            "UsernameAttributes": [
+              "email"
+            ],
+            "AutoVerifiedAttributes": [
+              "email"
+            ],
+            "Schema": [
+              {
+                "AttributeDataType": "String",
+                "Mutable": true,
+                "Required": true,
+                "Name": "email"
+              }
+            ]
+          }
+        },
+        "CognitoUserPoolClient": {
+          "Type": "AWS::Cognito::UserPoolClient",
+          "Properties": {
+            "ClientName": "dev-user-pool-client",
+            "UserPoolId": {
+              "Ref": "CognitoUserPool"
+            },
+            "ExplicitAuthFlows": [
+              "ADMIN_NO_SRP_AUTH"
+            ],
+            "GenerateSecret": false
+          }
+        },
+        "CognitoUserPoolGroup": {
+          "Type": "AWS::Cognito::UserPoolGroup",
+          "Properties": {
+            "Description": "Administrator group",
+            "GroupName": "Admin",
+            "Precedence": 0,
+            "UserPoolId": {
+              "Ref": "CognitoUserPool"
+            }
+          }
+        },
+        "AuthRole": {
+          "Type": "AWS::IAM::Role",
+          "Description": "Role that the authenticated user assumes",
+          "Properties": {
+            "RoleName": "auth-role",
+            "AssumeRolePolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Principal": {
+                    "Federated": "cognito-identity.amazonaws.com"
+                  },
+                  "Action": "sts:AssumeRoleWithWebIdentity",
+                  "Condition": {
+                    "ForAnyValue:StringLike": {
+                      "cognito-identity.amazon.com:amr": "authenticated"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "UnAuthRole": {
+          "Type": "AWS::IAM::Role",
+          "Description": "Role that the unauthenticated user assumes",
+          "Properties": {
+            "RoleName": "unauth-role",
+            "AssumeRolePolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Principal": {
+                    "Federated": "cognito-identity.amazonaws.com"
+                  },
+                  "Action": "sts:AssumeRoleWithWebIdentity",
+                  "Condition": {
+                    "ForAnyValue:StringLike": {
+                      "cognito-identity.amazon.com:amr": "unauthenticated"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "CognitoIdentityPool": {
+          "Type": "AWS::Cognito::IdentityPool",
+          "Properties": {
+            "IdentityPoolName": "devIdentityPool",
+            "AllowUnauthenticatedIdentities": false,
+            "CognitoIdentityProviders": [
+              {
+                "ClientId": {
+                  "Ref": "CognitoUserPoolClient"
+                },
+                "ProviderName": {
+                  "Fn::GetAtt": [
+                    "CognitoUserPool",
+                    "ProviderName"
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        "CognitoIdentityPoolRoles": {
+          "Type": "AWS::Cognito::IdentityPoolRoleAttachment",
+          "Properties": {
+            "IdentityPoolId": {
+              "Ref": "CognitoIdentityPool"
+            },
+            "Roles": {
+              "authenticated": {
+                "Fn::GetAtt": [
+                  "CognitoAuthRole",
+                  "Arn"
+                ]
+              }
+            }
+          }
+        },
+        "CognitoAuthRole": {
+          "Type": "AWS::IAM::Role",
+          "Properties": {
+            "Path": "/",
+            "AssumeRolePolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Principal": {
+                    "Federated": "cognito-identity.amazonaws.com"
+                  },
+                  "Action": [
+                    "sts:AssumeRoleWithWebIdentity"
+                  ],
+                  "Condition": {
+                    "StringEquals": {
+                      "cognito-identity.amazonaws.com:aud": {
+                        "Ref": "CognitoIdentityPool"
+                      }
+                    },
+                    "ForAnyValue:StringLike": {
+                      "cognito-identity.amazonaws.com:amr": "authenticated"
+                    }
+                  }
+                }
+              ]
+            },
+            "Policies": [
+              {
+                "PolicyName": "CognitoAuthorizedPolicy",
+                "PolicyDocument": {
+                  "Version": "2012-10-17",
+                  "Statement": [
+                    {
+                      "Effect": "Allow",
+                      "Action": [
+                        "mobiletargeting:PutEvents",
+                        "mobiletargeting:UpdateEndpoint",
+                        "mobiletargeting:GetUserEndpoints",
+                        "mobileanalytics:PutEvents",
+                        "cognito-sync:*",
+                        "cognito-identity:*",
+                        "s3:PutObject"
+                      ],
+                      "Resource": "*"
+                    }
+                  ]
+                }
+              },
+              {
+                "PolicyName": "PortfolioGraphQLAccess",
+                "PolicyDocument": {
+                  "Version": "2012-10-17",
+                  "Statement": [
+                    {
+                      "Effect": "Allow",
+                      "Action": "appsync:GraphQL",
+                      "Resource": [
+                        {
+                          "Fn::Join": [
+                            "",
+                            [
+                              {
+                                "Ref": "AppSync"
+                              },
+                              "/types/Subscription/fields/*"
+                            ]
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        "RekogTable": {
+          "Type": "AWS::DynamoDB::Table",
+          "Properties": {
+            "TableName": "dev-rekog-db",
+            "AttributeDefinitions": [
+              {
+                "AttributeName": "id",
+                "AttributeType": "S"
+              }
+            ],
+            "KeySchema": [
+              {
+                "AttributeName": "id",
+                "KeyType": "HASH"
+              }
+            ],
+            "BillingMode": "PAY_PER_REQUEST"
+          }
+        },
+        "AppSync": {
+          "Type": "AWS::AppSync::GraphQLApi",
+          "Properties": {
+            "AuthenticationType": "AWS_IAM",
+            "Name": "rekog-widget-appsync-api",
+            "XrayEnabled": true,
+            "LogConfig": {
+              "CloudWatchLogsRoleArn": {
+                "Fn::GetAtt": [
+                  "AppSyncDynamoRole",
+                  "Arn"
+                ]
+              },
+              "FieldLogLevel": "ERROR"
+            }
+          }
+        },
+        "AppSyncSchema": {
+          "Type": "AWS::AppSync::GraphQLSchema",
+          "Properties": {
+            "ApiId": {
+              "Fn::GetAtt": [
+                "AppSync",
+                "ApiId"
+              ]
+            },
+            "Definition": "\nschema { query: Query mutation: Mutation subscription: Subscription }\ntype Query { me(id: ID!): RekogImage }\ntype Subscription { addedRekogResponse(id:ID!): RekogImage @aws_subscribe(mutations: [\"addRekogResponse\"]) }\ntype Mutation { addRekogResponse( id: ID! ageHigh: Int ageLow: Int emotionConf1: Float emotionConf2: Float emotionType1: String emotionType2: String genderConf: Float genderValue: String labels: AWSJSON timestamp: Float ): RekogImage\n}\ntype RekogImage { id: ID! ageHigh: Int ageLow: Int emotionConf1: Float emotionConf2: Float emotionType1: String emotionType2: String genderConf: Float genderValue: String labels: AWSJSON timestamp: Float } "
+          }
+        },
+        "RekogResolverDataSource": {
+          "Type": "AWS::AppSync::DataSource",
+          "Properties": {
+            "ApiId": {
+              "Fn::GetAtt": [
+                "AppSync",
+                "ApiId"
+              ]
+            },
+            "Name": "RekogResolverDataSource",
+            "Description": "Data Source for AWS Rekognition GraphQL query",
+            "Type": "AMAZON_DYNAMODB",
+            "ServiceRoleArn": {
+              "Fn::GetAtt": [
+                "AppSyncDynamoRole",
+                "Arn"
+              ]
+            },
+            "DynamoDBConfig": {
+              "AwsRegion": "us-east-1",
+              "TableName": "dev-rekog-db"
+            }
+          }
+        },
+        "AppSyncDynamoRole": {
+          "Type": "AWS::IAM::Role",
+          "Properties": {
+            "AssumeRolePolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Action": [
+                    "sts:AssumeRole"
+                  ],
+                  "Effect": "Allow",
+                  "Principal": {
+                    "Service": [
+                      "appsync.amazonaws.com"
+                    ]
+                  }
+                }
+              ]
+            },
+            "Path": "/service-role/",
+            "Policies": [
+              {
+                "PolicyName": "DynamoDBReadWrite",
+                "PolicyDocument": {
+                  "Version": "2012-10-17",
+                  "Statement": [
+                    {
+                      "Action": [
+                        "dynamodb:GetItem",
+                        "logs:*"
+                      ],
+                      "Effect": "Allow",
+                      "Resource": "*"
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        "RekogMutationResolver": {
+          "Type": "AWS::AppSync::Resolver",
+          "DependsOn": "AppSyncSchema",
+          "Properties": {
+            "ApiId": {
+              "Fn::GetAtt": [
+                "AppSync",
+                "ApiId"
+              ]
+            },
+            "TypeName": "Mutation",
+            "FieldName": "addRekogResponse",
+            "DataSourceName": {
+              "Fn::GetAtt": [
+                "RekogResolverDataSource",
+                "Name"
+              ]
+            },
+            "RequestMappingTemplate": "{\n    \"version\" : \"2017-02-28\",\n    \"operation\" : \"PutItem\",\n    \"key\" : {\n        ## If object \"id\" should come from GraphQL arguments, change to $util.dynamodb.toDynamoDBJson($ctx.args.id)\n        \"id\": $util.dynamodb.toDynamoDBJson($context.arguments.id),\n    },\n    \"attributeValues\" : {\n      \"ageHigh\": $util.dynamodb.toDynamoDBJson($context.arguments.ageHigh),\n      \"ageLow\": $util.dynamodb.toDynamoDBJson($context.arguments.ageLow),\n      \"emotionConf1\": $util.dynamodb.toDynamoDBJson($context.arguments.emotionConf1),\n      \"emotionConf2\": $util.dynamodb.toDynamoDBJson($context.arguments.emotionConf2),\n      \"emotionType1\": $util.dynamodb.toDynamoDBJson($context.arguments.emotionType1),\n      \"emotionType2\": $util.dynamodb.toDynamoDBJson($context.arguments.emotionType2),\n      \"genderConf\": $util.dynamodb.toDynamoDBJson($context.arguments.genderConf),\n      \"genderValue\": $util.dynamodb.toDynamoDBJson($context.arguments.genderValue),\n      \"labels\": $util.dynamodb.toDynamoDBJson($context.arguments.labels),\n      \"timestamp\": $util.dynamodb.toDynamoDBJson($context.arguments.timestamp)\n    }\n}\n",
+            "ResponseMappingTemplate": "$util.toJson($ctx.result)"
+          }
+        },
+        "RekogQueryResolver": {
+          "Type": "AWS::AppSync::Resolver",
+          "DependsOn": "AppSyncSchema",
+          "Properties": {
+            "ApiId": {
+              "Fn::GetAtt": [
+                "AppSync",
+                "ApiId"
+              ]
+            },
+            "TypeName": "Query",
+            "FieldName": "me",
+            "DataSourceName": {
+              "Fn::GetAtt": [
+                "RekogResolverDataSource",
+                "Name"
+              ]
+            },
+            "RequestMappingTemplate": "{\n  \"version\": \"2017-02-28\",\n  \"operation\": \"GetItem\",\n  \"key\" :{\n    \"id\":$util.dynamodb.toDynamoDBJson($ctx.arguments.id)\n  }\n}\n",
+            "ResponseMappingTemplate": "$utils.toJson($ctx.result)"
+          }
+        },
+        "RekogMutateResponseRole": {
+          "Type": "AWS::IAM::Role",
+          "Properties": {
+            "RoleName": "portfolio-mutate-rekogResponse",
+            "AssumeRolePolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Principal": {
+                    "Service": [
+                      "lambda.amazonaws.com"
+                    ]
+                  },
+                  "Action": [
+                    "sts:AssumeRole"
+                  ]
+                }
+              ]
+            },
+            "Policies": [
+              {
+                "PolicyName": "portfolio-mutate-rekogResponse-access-policy",
+                "PolicyDocument": {
+                  "Version": "2012-10-17",
+                  "Statement": [
+                    {
+                      "Effect": "Allow",
+                      "Action": [
+                        "appsync:GraphQL"
+                      ],
+                      "Resource": {
+                        "Fn::Join": [
+                          "",
+                          [
+                            {
+                              "Ref": "AppSync"
+                            },
+                            "/types/Mutation/fields/addRekogResponse"
+                          ]
+                        ]
+                      }
+                    },
+                    {
+                      "Effect": "Allow",
+                      "Action": [
+                        "rekognition:*",
+                        "s3:GetObject",
+                        "s3:DeleteObject",
+                        "dynamodb:PutItem"
+                      ],
+                      "Resource": "*"
+                    }
+                  ]
+                }
+              },
+              {
+                "PolicyName": "portfolio-mutate-rekogResponse-cloudwatch-policy",
+                "PolicyDocument": {
+                  "Version": "2012-10-17",
+                  "Statement": [
+                    {
+                      "Effect": "Allow",
+                      "Action": [
+                        "logs:CreateLogGroup"
+                      ],
+                      "Resource": "arn:aws:logs:us-east-1:#{AWS::AccountId}:*"
+                    },
+                    {
+                      "Effect": "Allow",
+                      "Action": [
+                        "logs:CreateLogStream",
+                        "logs:PutLogEvents"
+                      ],
+                      "Resource": "arn:aws:logs:us-east-1:#{AWS::AccountId}:*"
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      },
+      "Outputs": {
+        "UserPoolId": {
+          "Value": {
+            "Ref": "CognitoUserPool"
+          }
+        },
+        "UserPoolClientId": {
+          "Value": {
+            "Ref": "CognitoUserPoolClient"
+          }
+        },
+        "IdentityPoolId": {
+          "Value": {
+            "Ref": "CognitoIdentityPool"
+          }
+        }
+      }
+    },
+    "serviceFilename": "serverless.yml",
+    "layers": {},
+    "isDashboardMonitoringPreconfigured": false
+  },
+  "package": {
+    "individually": true,
+    "artifactDirectoryName": "serverless/rekog-widget-api/dev/1598220425460-2020-08-23T22:07:05.460Z",
+    "artifact": ""
+  }
+}
