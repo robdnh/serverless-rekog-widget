@@ -13,6 +13,3 @@ Resources:
               - GET
             AllowedHeaders:
               - "*"
-
-# Next iteration needs to limit allowed origin to
-# Cloudfront OAI

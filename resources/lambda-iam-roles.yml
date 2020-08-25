@@ -20,11 +20,21 @@ Resources:
                 Resource: { Fn::Join: [ '', [ { Ref: AppSync }, '/types/Mutation/fields/addRekogResponse' ] ] }
               - Effect: Allow
                 Action:
-                  - 'rekognition:*'
                   - s3:GetObject
                   - s3:DeleteObject
-                  - dynamodb:PutItem
+                Resource:
+                  - Fn::Sub: arn:aws:s3:::${self:custom.rekognitionBucketName}
+                  - Fn::Sub: arn:aws:s3:::${self:custom.rekognitionBucketName}/*
+
+              - Effect: Allow
+                Action:
+                  - 'rekognition:*'
                 Resource: '*'
+              - Effect: Allow
+                Action:
+                  - dynamodb:PutItem
+                Resource:
+                  Fn::GetAtt: [ RekogTable, Arn ]
         - PolicyName: ${self:provider.apiName}-mutate-rekogResponse-cloudwatch-policy
           PolicyDocument:
             Version: "2012-10-17"

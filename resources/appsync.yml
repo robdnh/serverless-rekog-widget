@@ -89,15 +89,24 @@ type RekogImage {
               Service: [appsync.amazonaws.com]
         Path: /service-role/
         Policies:
-          - PolicyName: DynamoDBReadWrite
+          - PolicyName: LogReadWrite
+            PolicyDocument:
+              Version: '2012-10-17'
+              Statement:
+                - Action:
+                  - "logs:*"
+                  Effect: Allow
+                  Resource: '*'
+          - PolicyName: DynamoDBGetPut
             PolicyDocument:
               Version: '2012-10-17'
               Statement:
                 - Action:
                   - "dynamodb:GetItem"
-                  - "logs:*"
+                  - "dynamodb:PutItem"
                   Effect: Allow
-                  Resource: '*'
+                  Resource: 
+                    Fn::GetAtt: [ RekogTable, Arn ]
                   
   RekogMutationResolver:
     Type: AWS::AppSync::Resolver
