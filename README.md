@@ -49,7 +49,6 @@
 * [React Webcam](https://github.com/mozmorris/react-webcam)
 * [AWS Cloudfront](https://aws.amazon.com/cloudfront/)
 * [AWS S3](https://aws.amazon.com/s3/)
-* [AWS Cloudfront](https://aws.amazon.com/cloudfront/)
 
 ### Deployed With
 * [Serverless Framework](https://www.serverless.com/)
@@ -92,17 +91,6 @@ git clone https://github.com/robdnh/serverless-rekog-widget.git
 3. Deploy the AWS Infrastructure
 ```sh
 serverless deploy
-```
-
-### Deploy Example Site
-
-1. Navigate to configExample.js. Identify and insert the Resource IDs associated with this infrastructure in your C2S Account.
-
-1. In a command line, navigate to the "rekog-widget-example" directory
-
-2. Run the code
-```sh
-npm start
 ```
 
 <!-- LICENSE -->
